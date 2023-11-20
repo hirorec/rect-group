@@ -1,0 +1,51 @@
+{
+  "name": "rect-group",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack serve",
+    "build": "rm -fr dist && webpack",
+    "start": "node ./server.js",
+    "lint:js": "eslint --ext \".js,.ts\" --ignore-path .gitignore .",
+    "lint:style": "stylelint \"**/*.{css,scss}\" --ignore-path .gitignore --fix"
+  },
+  "keywords": [],
+  "author": "kitamura",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/dat-gui": "^0.6.3",
+    "@types/lodash": "^4.14.201",
+    "@types/three": "^0.134.0",
+    "copy-webpack-plugin": "^10.0.0",
+    "css-loader": "^6.5.1",
+    "eslint": "^8.4.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "file-loader": "^6.2.0",
+    "html-webpack-plugin": "latest",
+    "image-webpack-loader": "^8.0.1",
+    "mini-css-extract-plugin": "^2.4.5",
+    "prettier": "^2.5.1",
+    "progress-bar-webpack-plugin": "latest",
+    "raw-loader": "^4.0.2",
+    "sass": "^1.43.4",
+    "sass-loader": "^12.3.0",
+    "style-loader": "^3.3.1",
+    "stylelint": "^14.1.0",
+    "stylelint-config-prettier": "^9.0.3",
+    "stylelint-config-property-sort-order-smacss": "^8.0.0",
+    "stylelint-prettier": "^2.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "webpack-dev-server": "latest"
+  },
+  "dependencies": {
+    "@doodle3d/clipper-js": "^1.0.11",
+    "@svgdotjs/svg.js": "^3.2.0",
+    "lodash": "^4.17.21"
+  }
+}
