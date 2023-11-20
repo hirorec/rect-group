@@ -1,4 +1,4 @@
-# Typescript Three.js Webpack Starter
+# Rect Grouping
 
 - Typescript support.
 - Webpack
