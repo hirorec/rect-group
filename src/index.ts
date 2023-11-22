@@ -500,10 +500,10 @@ const init = () => {
     }
 
     // 各要素のShapeを結合したパス(Shape)を作成
-    let resultShape = null
+    let resultShape: Shape | undefined
 
     for (let shape of shapes) {
-      if (resultShape === null) {
+      if (!resultShape) {
         resultShape = shape
       } else {
         resultShape = resultShape.union(shape)
