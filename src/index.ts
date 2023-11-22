@@ -6,7 +6,7 @@ import type { PointArrayAlias } from '@svgdotjs/svg.js'
 
 import '@/assets/scss/style.scss'
 
-const DEBUG_DRAW_ENABLED = true
+const DEBUG_DRAW_ENABLED = false
 const MAX_DISTANCE = 200
 const OFFSET = 10
 const OFFSET_OPTION = {
@@ -21,7 +21,8 @@ const rectangles: number[][] = [
 
   [100, 150, 100, 120],
   [500, 350, 50, 50],
-  [650, 450, 50, 50],
+  [600, 50, 100, 120],
+  [620, 250, 50, 50],
 ]
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -241,7 +242,7 @@ function pathToArray(path: any): PointArrayAlias {
   return paths as PointArrayAlias
 }
 
-function lineToGroup(lines: VLine[]) {
+function lineToGroup(lines: VLine[]): VLine[][] {
   let index = 0
 
   return lines.reduce((group: VLine[][], line: VLine) => {
@@ -373,19 +374,22 @@ const init = () => {
 
     rects.forEach((rect, i) => {
       let collisionFound = false
+      let foundIndex = -1
 
       rect.vertices.forEach((vertex) => {
         targetRects.forEach((r, j) => {
+          // 自分自身は除外
           if (i !== j) {
             const vLine = r.collision(vertex)
 
             if (vLine) {
               vLinesAll.push(vLine)
 
-              // 方向が一致したもののみ
+              // 頂点と線の方向が一致したもののみ
               if (vertex.vector.y === vLine.vector.y || vertex.vector.x === vLine.vector.x) {
                 vLines.push(vLine)
                 collisionFound = true
+                foundIndex = j
               }
             }
           }
@@ -396,6 +400,14 @@ const init = () => {
         const clone = rect.clone()
         clone.isolated = false
         newGroupedRectangles.push(clone)
+
+        if (foundIndex >= 0) {
+          // TODO IDで重複除外
+          const rect = targetRects[foundIndex]
+          const clone = rect.clone()
+          clone.isolated = false
+          newGroupedRectangles.push(clone)
+        }
       } else {
         if (isSecond) {
           rect.isolated = true
@@ -488,15 +500,6 @@ const init = () => {
         resultShape = resultShape.union(shape)
       }
     }
-
-    // console.log(resultShape)
-
-    // const OFFSET_OPTION = {
-    //   // jointType: 'jtRound',
-    //   // endType: 'etClosedPolygon',
-    //   // miterLimit: 2.0,
-    //   roundPrecision: 1,
-    // }
 
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
@@ -594,7 +597,7 @@ const init = () => {
 
     setVRects()
     setGroupedRectangles(vRects, vRects)
-    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
+    // setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
 
     // 描画
     drawBaseRectangles()
