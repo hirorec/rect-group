@@ -8,6 +8,11 @@ import type { Point } from '@doodle3d/clipper-js'
 
 import '@/assets/scss/style.scss'
 
+type MousePosition = {
+  x: number
+  y: number
+}
+
 const DEBUG_DRAW_ENABLED = false
 const MAX_DISTANCE = 200
 const OFFSET = 10
@@ -32,9 +37,9 @@ const rectangles: number[][] = [
   // [620, 250, 50, 50],
 ]
 
-document.addEventListener('DOMContentLoaded', () => {
-  init()
-})
+//--------------------
+// Classes
+//--------------------
 
 class Vector {
   constructor(public readonly x: -1 | 0 | 1, public readonly y: -1 | 0 | 1) {}
@@ -180,10 +185,9 @@ class Rect {
   constructor(public readonly x: number, public readonly y: number, public readonly width: number, public readonly height: number) {}
 }
 
-type MousePosition = {
-  x: number
-  y: number
-}
+//--------------------
+// Utility
+//--------------------
 
 function rectToShape(x: number, y: number, width: number, height: number): Shape {
   let path = [
@@ -276,20 +280,9 @@ const init = () => {
   let selectedIndex: number | null = null
   const mousePosition: MousePosition = { x: 0, y: 0 }
 
-  // ベース矩形を描画
-  function drawBaseRectangles() {
-    if (ctx) {
-      for (const rect of rectangles) {
-        const [x, y, width, height] = rect
-        ctx.beginPath()
-        ctx.rect(x, y, width, height)
-        ctx.strokeStyle = '#000'
-        ctx.stroke()
-        ctx.fillStyle = '#ccc'
-        ctx.fill()
-      }
-    }
-  }
+  //--------------------
+  // ロジック系
+  //--------------------
 
   function setVRects() {
     for (const rect of rectangles) {
@@ -419,10 +412,12 @@ const init = () => {
         new Vertex(lines[1].v2.x, lines[1].v2.y),
       ]
 
-      const x = Math.min(...vertices.map((v) => v.x))
-      const y = Math.min(...vertices.map((v) => v.y))
-      const width = Math.max(...vertices.map((v) => v.x)) - x
-      const height = Math.max(...vertices.map((v) => v.y)) - y
+      const xList = vertices.map((v) => v.x)
+      const yList = vertices.map((v) => v.y)
+      const x = Math.min(...xList)
+      const y = Math.min(...yList)
+      const width = Math.max(...xList) - x
+      const height = Math.max(...yList) - y
 
       const v1 = new VertexWithVector({ x: -1, y: -1 }, x, y, 'tl')
       const v2 = new VertexWithVector({ x: 1, y: -1 }, x + width, y, 'tr')
@@ -431,35 +426,6 @@ const init = () => {
 
       const rect = new VRect(uuidv4(), [v1, v2, v3, v4], width, height, true)
       compRectangles.push(rect)
-    }
-  }
-
-  function drawCompRectangles() {
-    if (ctx && DEBUG_DRAW_ENABLED) {
-      compRectangles.forEach((rect) => {
-        ctx.beginPath()
-        ctx.rect(rect.x, rect.y, rect.width, rect.height)
-        ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
-        ctx.fill()
-      })
-    }
-  }
-
-  function drawVLines() {
-    if (ctx && DEBUG_DRAW_ENABLED) {
-      vLinesAll.forEach((line) => {
-        ctx.beginPath()
-
-        if (line.vector.y > 0 || line.vector.x > 0) {
-          ctx.strokeStyle = '#ff0000'
-        } else {
-          ctx.strokeStyle = '#00ff00'
-        }
-
-        ctx.moveTo(line.v1.x, line.v1.y)
-        ctx.lineTo(line.v2.x, line.v2.y)
-        ctx.stroke()
-      })
     }
   }
 
@@ -546,6 +512,56 @@ const init = () => {
     }
   }
 
+  //--------------------
+  // 描画系
+  //--------------------
+
+  // ベース矩形を描画
+  function drawBaseRectangles() {
+    if (ctx) {
+      for (const rect of rectangles) {
+        const [x, y, width, height] = rect
+        ctx.beginPath()
+        ctx.rect(x, y, width, height)
+        ctx.strokeStyle = '#000'
+        ctx.stroke()
+        ctx.fillStyle = '#ccc'
+        ctx.fill()
+      }
+    }
+  }
+
+  // 補完矩形の描画
+  function drawCompRectangles() {
+    if (ctx && DEBUG_DRAW_ENABLED) {
+      compRectangles.forEach((rect) => {
+        ctx.beginPath()
+        ctx.rect(rect.x, rect.y, rect.width, rect.height)
+        ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
+        ctx.fill()
+      })
+    }
+  }
+
+  // 衝突線の描画
+  function drawVLines() {
+    if (ctx && DEBUG_DRAW_ENABLED) {
+      vLinesAll.forEach((line) => {
+        ctx.beginPath()
+
+        if (line.vector.y > 0 || line.vector.x > 0) {
+          ctx.strokeStyle = '#ff0000'
+        } else {
+          ctx.strokeStyle = '#00ff00'
+        }
+
+        ctx.moveTo(line.v1.x, line.v1.y)
+        ctx.lineTo(line.v2.x, line.v2.y)
+        ctx.stroke()
+      })
+    }
+  }
+
   function drawShapes() {
     resultShape?.paths.forEach((path) => {
       svg
@@ -564,38 +580,10 @@ const init = () => {
     })
   }
 
-  function update() {
-    // reset
-    vRects = []
-    shapes = []
-    groupedRectangles = []
-    compRectangles = []
-    resultShape = undefined
-    isolatedShapes = []
-
-    svg.clear()
-
-    if (ctx) {
-      ctx.clearRect(0, 0, 1000, 1000)
-    }
-
-    // logic
-    setVRects()
-    setGroupedRectangles(vRects, vRects)
-    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
-    setShapes()
-    removeShapeCavity()
-
-    // draw
-    drawBaseRectangles()
-    drawCompRectangles()
-    drawVLines()
-    drawShapes()
-  }
-
-  update()
-
+  //--------------------
   // インタラクション系
+  //--------------------
+
   const getHitIndex = (mouseX: number, mouseY: number): number | null => {
     const foundIndex = rectangles.findIndex((rect: number[]) => {
       const [x, y, width, height] = rect
@@ -648,4 +636,41 @@ const init = () => {
   window.addEventListener('mousedown', onMouseDown)
   window.addEventListener('mouseup', onMouseUp)
   window.addEventListener('mousemove', onMouseMove)
+
+  //--------------------
+  // execute
+  //--------------------
+
+  function update() {
+    // reset
+    vRects = []
+    shapes = []
+    groupedRectangles = []
+    compRectangles = []
+    resultShape = undefined
+    isolatedShapes = []
+
+    svg.clear()
+
+    if (ctx) {
+      ctx.clearRect(0, 0, 1000, 1000)
+    }
+
+    // logic
+    setVRects()
+    setGroupedRectangles(vRects, vRects)
+    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
+    setShapes()
+    removeShapeCavity()
+
+    // draw
+    drawBaseRectangles()
+    drawCompRectangles()
+    drawVLines()
+    drawShapes()
+  }
+
+  update()
 }
+
+document.addEventListener('DOMContentLoaded', init)
