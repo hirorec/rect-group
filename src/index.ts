@@ -7,7 +7,6 @@ import type { PointArrayAlias } from '@svgdotjs/svg.js'
 
 import '@/assets/scss/style.scss'
 
-const USE_SVG = true
 const DEBUG_DRAW_ENABLED = false
 const MAX_DISTANCE = 200
 const OFFSET = 10
@@ -21,10 +20,10 @@ const rectangles: number[][] = [
   [60, 250, 100, 120],
   [300, 251, 100, 120],
 
-  [100, 150, 100, 120],
-  [500, 350, 50, 50],
-  [600, 50, 100, 120],
-  [620, 250, 50, 50],
+  // [100, 150, 100, 120],
+  // [500, 350, 50, 50],
+  // [600, 50, 100, 120],
+  // [620, 250, 50, 50],
 ]
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -207,6 +206,12 @@ class VRect {
       })
     })
   }
+}
+
+class Rect {
+  public isolated = false
+
+  constructor(public readonly x: number, public readonly y: number, public readonly width: number, public readonly height: number) {}
 }
 
 type MousePosition = {
@@ -492,6 +497,7 @@ const init = () => {
     }
   }
 
+  // clipper-js 用のデータ作成
   function setShapes() {
     for (const rect of groupedRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
@@ -514,6 +520,48 @@ const init = () => {
 
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
+    // 空洞の削除
+    const deleteIndices: number[] = []
+    resultShape?.paths.forEach((path, i) => {
+      if (path.length === 4) {
+        const x = path[0].X
+        const y = path[0].Y
+        const width = Math.abs(path[3].X - x)
+        const height = Math.abs(path[2].Y - y)
+        const rect1 = new Rect(x, y, width, height)
+
+        resultShape?.paths.forEach((path, j) => {
+          if (i === j) {
+            return
+          }
+
+          const xList = path.map((p) => p.X)
+          const yList = path.map((p) => p.Y)
+          const minX = Math.min(...xList)
+          const maxX = Math.max(...xList)
+          const minY = Math.min(...yList)
+          const maxY = Math.max(...yList)
+          const width = maxX - minX
+          const height = maxY - minY
+          const rect2 = new Rect(minX, minY, width, height)
+
+          if (
+            rect1.x > rect2.x &&
+            rect1.x + rect1.width < rect2.x + rect2.width &&
+            rect1.y > rect2.y &&
+            rect1.y + rect1.height < rect2.x + rect2.height
+          ) {
+            deleteIndices.push(i)
+          }
+        })
+      }
+    })
+
+    deleteIndices.forEach((index) => {
+      resultShape?.paths.splice(index, 1)
+    })
+
+    // 孤立した矩形
     const isolatedRects = vRects.filter((rect) => {
       return rect.isolated
     })
@@ -521,7 +569,6 @@ const init = () => {
     isolatedRects.forEach((rect) => {
       let shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
       shape = shape.offset(OFFSET, OFFSET_OPTION)
-
       isolatedShapes.push(shape)
     })
   }
