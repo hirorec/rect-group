@@ -8,7 +8,7 @@ import type { PointArrayAlias } from '@svgdotjs/svg.js'
 import '@/assets/scss/style.scss'
 
 const USE_SVG = true
-const DEBUG_DRAW_ENABLED = true
+const DEBUG_DRAW_ENABLED = false
 const MAX_DISTANCE = 200
 const OFFSET = 10
 const OFFSET_OPTION = {
@@ -18,7 +18,7 @@ const OFFSET_OPTION = {
 const rectangles: number[][] = [
   [50, 50, 100, 120],
   [300, 50, 100, 120],
-  [50, 250, 100, 120],
+  [60, 250, 100, 120],
   [300, 251, 100, 120],
 
   [100, 150, 100, 120],
@@ -417,7 +417,9 @@ const init = () => {
         })
       } else {
         if (isSecond) {
-          rect.isolated = true
+          if (!groupedRectangles.find((r) => r.id === rect.id)) {
+            rect.isolated = true
+          }
         }
       }
     })
@@ -508,8 +510,6 @@ const init = () => {
       }
     }
 
-    // console.log(resultShape)
-
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
     if (USE_SVG) {
@@ -520,6 +520,12 @@ const init = () => {
           .attr({ fill: 'none' })
           .stroke({ color: 'orange', width: 2, opacity: 1 })
       })
+
+      // svg
+      //   .polygon()
+      //   .plot(pathToArray(resultShape?.paths[0]) as PointArrayAlias)
+      //   .attr({ fill: 'none' })
+      //   .stroke({ color: 'orange', width: 2, opacity: 1 })
     } else {
       if (ctx) {
         resultShape?.paths.forEach((paths) => {
@@ -558,7 +564,7 @@ const init = () => {
           .polygon()
           .plot(shapeToArray(shape) as PointArrayAlias)
           .attr({ fill: 'none' })
-          .stroke({ color: 'orange', width: 2, opacity: 1 })
+          .stroke({ color: 'red', width: 2, opacity: 1 })
       } else {
         if (ctx) {
           shape?.paths.forEach((paths) => {
@@ -656,7 +662,7 @@ const init = () => {
 
     setVRects()
     setGroupedRectangles(vRects, vRects)
-    // setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
+    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
 
     // 描画
     drawBaseRectangles()
