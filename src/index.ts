@@ -4,6 +4,7 @@ import { SVG } from '@svgdotjs/svg.js'
 import { v4 as uuidv4 } from 'uuid'
 
 import type { PointArrayAlias } from '@svgdotjs/svg.js'
+import type { Point } from '@doodle3d/clipper-js'
 
 import '@/assets/scss/style.scss'
 
@@ -15,10 +16,15 @@ const OFFSET_OPTION = {
 }
 
 const rectangles: number[][] = [
-  [50, 50, 100, 120],
-  [300, 50, 100, 120],
-  [60, 250, 100, 120],
-  [300, 251, 100, 120],
+  // [50, 50, 100, 120],
+  // [300, 50, 100, 120],
+  // [60, 250, 100, 120],
+  // [300, 251, 100, 120],
+
+  [50 + 500, 50 + 350, 100, 120],
+  [300 + 520, 50 + 320, 100, 120],
+  [60 + 500, 250 + 350, 100, 120],
+  [300 + 500, 251 + 350, 100, 120],
 
   // [100, 150, 100, 120],
   // [500, 350, 50, 50],
@@ -520,47 +526,6 @@ const init = () => {
 
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
-    // 空洞の削除
-    const deleteIndices: number[] = []
-    resultShape?.paths.forEach((path, i) => {
-      if (path.length === 4) {
-        const x = path[0].X
-        const y = path[0].Y
-        const width = Math.abs(path[3].X - x)
-        const height = Math.abs(path[2].Y - y)
-        const rect1 = new Rect(x, y, width, height)
-
-        resultShape?.paths.forEach((path, j) => {
-          if (i === j) {
-            return
-          }
-
-          const xList = path.map((p) => p.X)
-          const yList = path.map((p) => p.Y)
-          const minX = Math.min(...xList)
-          const maxX = Math.max(...xList)
-          const minY = Math.min(...yList)
-          const maxY = Math.max(...yList)
-          const width = maxX - minX
-          const height = maxY - minY
-          const rect2 = new Rect(minX, minY, width, height)
-
-          if (
-            rect1.x > rect2.x &&
-            rect1.x + rect1.width < rect2.x + rect2.width &&
-            rect1.y > rect2.y &&
-            rect1.y + rect1.height < rect2.x + rect2.height
-          ) {
-            deleteIndices.push(i)
-          }
-        })
-      }
-    })
-
-    deleteIndices.forEach((index) => {
-      resultShape?.paths.splice(index, 1)
-    })
-
     // 孤立した矩形
     const isolatedRects = vRects.filter((rect) => {
       return rect.isolated
@@ -571,6 +536,54 @@ const init = () => {
       shape = shape.offset(OFFSET, OFFSET_OPTION)
       isolatedShapes.push(shape)
     })
+  }
+
+  // 空洞の削除
+  function removeShapeCavity() {
+    const deletePathIndices: number[] = []
+    const rectFromPath = (path: Point[]): Rect => {
+      const xList = path.map((p) => p.X)
+      const yList = path.map((p) => p.Y)
+      const minX = Math.min(...xList)
+      const maxX = Math.max(...xList)
+      const minY = Math.min(...yList)
+      const maxY = Math.max(...yList)
+      const width = maxX - minX
+      const height = maxY - minY
+      const rect = new Rect(minX, minY, width, height)
+      return rect
+    }
+
+    resultShape?.paths.forEach((path, i) => {
+      const rect1 = rectFromPath(path)
+
+      resultShape?.paths.forEach((path, j) => {
+        if (i === j) {
+          return
+        }
+
+        const rect2 = rectFromPath(path)
+
+        if (
+          rect1.x > rect2.x &&
+          rect1.x + rect1.width < rect2.x + rect2.width &&
+          rect1.y > rect2.y &&
+          rect1.y + rect1.height < rect2.x + rect2.height
+        ) {
+          deletePathIndices.push(i)
+        }
+      })
+    })
+
+    if (deletePathIndices.length > 0) {
+      const filteredPaths = resultShape?.paths.filter((_, index) => {
+        return !deletePathIndices.includes(index)
+      })
+
+      if (filteredPaths) {
+        resultShape = new Shape(filteredPaths)
+      }
+    }
   }
 
   function drawShapes() {
@@ -611,6 +624,7 @@ const init = () => {
     setGroupedRectangles(vRects, vRects)
     setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
     setShapes()
+    removeShapeCavity()
 
     // draw
     drawBaseRectangles()
