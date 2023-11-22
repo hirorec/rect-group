@@ -80,7 +80,7 @@ class VRect {
     return this.vertices[0].y
   }
 
-  public collision(vertex: VertexWithVector): VLine | null {
+  public collisionLine(vertex: VertexWithVector): VLine | null {
     let line: VLine | null = null
 
     if (vertex.x >= this.x && vertex.x <= this.x + this.width) {
@@ -121,21 +121,6 @@ class VRect {
           }
 
           line = new VLine(vector, v1, v2)
-        } else {
-          // 計算量が増える
-          // const v1: Vertex = {
-          //   x: vertex.x,
-          //   y: vertex.y,
-          // }
-          // const v2: Vertex = {
-          //   x: vertex.x,
-          //   y: this.y,
-          // }
-          // const vector: Vector = {
-          //   x: 0,
-          //   y: -1,
-          // }
-          // line = new VLine(vector, v1, v2)
         }
       }
     }
@@ -175,21 +160,6 @@ class VRect {
             y: 0,
           }
           line = new VLine(vector, v1, v2)
-        } else {
-          // 計算量が増える
-          // const v1: Vertex = {
-          //   x: vertex.x,
-          //   y: vertex.y,
-          // }
-          // const v2: Vertex = {
-          //   x: this.x,
-          //   y: vertex.y,
-          // }
-          // const vector: Vector = {
-          //   x: -1,
-          //   y: 0,
-          // }
-          // line = new VLine(vector, v1, v2)
         }
       }
     }
@@ -204,19 +174,9 @@ class VRect {
   public clone(): VRect {
     return new VRect(this.id, [...this.vertices], this.width, this.height, this.dummy)
   }
-
-  public equal(rect: VRect): boolean {
-    return rect.vertices.every((v1) => {
-      return this.vertices.every((v2) => {
-        return v1.vector.x === v2.vector.x && v1.vector.y === v2.vector.y && v1.x === v2.x && v1.y === v2.y
-      })
-    })
-  }
 }
 
 class Rect {
-  public isolated = false
-
   constructor(public readonly x: number, public readonly y: number, public readonly width: number, public readonly height: number) {}
 }
 
@@ -398,7 +358,7 @@ const init = () => {
         targetRects.forEach((r, j) => {
           // 自分自身は除外
           if (i !== j) {
-            const vLine = r.collision(vertex)
+            const vLine = r.collisionLine(vertex)
 
             if (vLine) {
               vLinesAll.push(vLine)
@@ -503,7 +463,7 @@ const init = () => {
     }
   }
 
-  // clipper-js 用のデータ作成
+  // Clipper.js用のShapeデータ作成
   function setShapes() {
     for (const rect of groupedRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
@@ -659,17 +619,14 @@ const init = () => {
 
     const x = event.clientX
     const y = event.clientY
+    const index = getHitIndex(x, y)
 
     mousePosition.x = x
     mousePosition.y = y
-
-    const index = getHitIndex(x, y)
-
     selectedIndex = index
-    // console.log(selectedIndex)
   }
 
-  const onMouseUp = (event: MouseEvent) => {
+  const onMouseUp = () => {
     isMouseDown = false
   }
 
