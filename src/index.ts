@@ -296,6 +296,10 @@ const init = () => {
   let groupedRectangles: VRect[] = []
   let compRectangles: VRect[] = []
 
+  // Shape
+  let resultShape: Shape | undefined
+  let isolatedShapes: Shape[] = []
+
   // インタラクション系
   let isMouseDown = false
   let selectedIndex: number | null = null
@@ -488,7 +492,10 @@ const init = () => {
     }
   }
 
-  function drawShapes() {
+  function setShapes() {
+    resultShape = undefined
+    isolatedShapes = []
+
     for (const rect of groupedRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
       shapes.push(shape)
@@ -500,8 +507,6 @@ const init = () => {
     }
 
     // 各要素のShapeを結合したパス(Shape)を作成
-    let resultShape: Shape | undefined
-
     for (let shape of shapes) {
       if (!resultShape) {
         resultShape = shape
@@ -512,45 +517,6 @@ const init = () => {
 
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
-    if (USE_SVG) {
-      resultShape?.paths.forEach((path) => {
-        svg
-          .polygon()
-          .plot(pathToArray(path) as PointArrayAlias)
-          .attr({ fill: 'none' })
-          .stroke({ color: 'orange', width: 2, opacity: 1 })
-      })
-
-      // svg
-      //   .polygon()
-      //   .plot(pathToArray(resultShape?.paths[0]) as PointArrayAlias)
-      //   .attr({ fill: 'none' })
-      //   .stroke({ color: 'orange', width: 2, opacity: 1 })
-    } else {
-      if (ctx) {
-        resultShape?.paths.forEach((paths) => {
-          ctx.beginPath()
-
-          paths.forEach((path, index) => {
-            const x = path.X
-            const y = path.Y
-            // console.log({ x, y })
-
-            if (index === 0) {
-              ctx.moveTo(x, y)
-            } else {
-              ctx.lineTo(x, y)
-            }
-          })
-
-          ctx.closePath()
-          ctx.strokeStyle = 'orange'
-          ctx.lineWidth = 2
-          ctx.stroke()
-        })
-      }
-    }
-
     const isolatedRects = vRects.filter((rect) => {
       return rect.isolated
     })
@@ -559,36 +525,27 @@ const init = () => {
       let shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
       shape = shape.offset(OFFSET, OFFSET_OPTION)
 
-      if (USE_SVG) {
-        svg
-          .polygon()
-          .plot(shapeToArray(shape) as PointArrayAlias)
-          .attr({ fill: 'none' })
-          .stroke({ color: 'red', width: 2, opacity: 1 })
-      } else {
-        if (ctx) {
-          shape?.paths.forEach((paths) => {
-            ctx.beginPath()
+      isolatedShapes.push(shape)
+    })
+  }
 
-            paths.forEach((path, index) => {
-              const x = path.X
-              const y = path.Y
-              // console.log({ x, y })
+  function drawShapes() {
+    resultShape?.paths.forEach((path) => {
+      svg
+        .polygon()
+        .plot(pathToArray(path) as PointArrayAlias)
+        .attr({ fill: 'none' })
+        .stroke({ color: 'orange', width: 2, opacity: 1 })
+    })
 
-              if (index === 0) {
-                ctx.moveTo(x, y)
-              } else {
-                ctx.lineTo(x, y)
-              }
-            })
+    isolatedShapes.forEach((shape) => {
+      shape = shape.offset(OFFSET, OFFSET_OPTION)
 
-            ctx.closePath()
-            ctx.strokeStyle = 'orange'
-            ctx.lineWidth = 2
-            ctx.stroke()
-          })
-        }
-      }
+      svg
+        .polygon()
+        .plot(shapeToArray(shape) as PointArrayAlias)
+        .attr({ fill: 'none' })
+        .stroke({ color: 'red', width: 2, opacity: 1 })
     })
   }
 
@@ -663,11 +620,11 @@ const init = () => {
     setVRects()
     setGroupedRectangles(vRects, vRects)
     setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
+    setShapes()
 
     // 描画
     drawBaseRectangles()
     drawCompRectangles()
-
     drawVLines()
     drawShapes()
   }
