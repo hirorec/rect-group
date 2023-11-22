@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import Shape from '@doodle3d/clipper-js'
 import { SVG } from '@svgdotjs/svg.js'
+import { v4 as uuidv4 } from 'uuid'
 
 import type { PointArrayAlias } from '@svgdotjs/svg.js'
 
@@ -58,6 +59,7 @@ class VRect {
   public isolated = false
 
   constructor(
+    public readonly id: string,
     public readonly vertices: VertexWithVector[],
     public readonly width: number,
     public readonly height: number,
@@ -194,7 +196,7 @@ class VRect {
   }
 
   public clone(): VRect {
-    return new VRect([...this.vertices], this.width, this.height, this.dummy)
+    return new VRect(this.id, [...this.vertices], this.width, this.height, this.dummy)
   }
 
   public equal(rect: VRect): boolean {
@@ -361,7 +363,7 @@ const init = () => {
         label: 'bl',
       }
 
-      const vRect: VRect = new VRect([v1, v2, v3, v4], width, height)
+      const vRect: VRect = new VRect(uuidv4(), [v1, v2, v3, v4], width, height)
 
       vRects.push(vRect)
     }
@@ -402,11 +404,15 @@ const init = () => {
         newGroupedRectangles.push(clone)
 
         foundIndices.forEach((index) => {
-          // TODO IDで重複除外
           const rect = targetRects[index]
           const clone = rect.clone()
           clone.isolated = false
-          newGroupedRectangles.push(clone)
+
+          const found = newGroupedRectangles.find((r) => r.id === rect.id)
+
+          if (!found) {
+            newGroupedRectangles.push(clone)
+          }
         })
       } else {
         if (isSecond) {
@@ -445,7 +451,7 @@ const init = () => {
       const v3 = new VertexWithVector({ x: 1, y: 1 }, x + width, y + height, 'br')
       const v4 = new VertexWithVector({ x: -1, y: 1 }, x, y + height, 'bl')
 
-      const rect = new VRect([v1, v2, v3, v4], width, height, true)
+      const rect = new VRect(uuidv4(), [v1, v2, v3, v4], width, height, true)
       compRectangles.push(rect)
     }
   }
