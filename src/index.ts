@@ -493,9 +493,6 @@ const init = () => {
   }
 
   function setShapes() {
-    resultShape = undefined
-    isolatedShapes = []
-
     for (const rect of groupedRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
       shapes.push(shape)
@@ -539,8 +536,6 @@ const init = () => {
     })
 
     isolatedShapes.forEach((shape) => {
-      shape = shape.offset(OFFSET, OFFSET_OPTION)
-
       svg
         .polygon()
         .plot(shapeToArray(shape) as PointArrayAlias)
@@ -606,10 +601,13 @@ const init = () => {
   window.addEventListener('mousemove', onMouseMove)
 
   function update() {
+    // reset
     vRects = []
     shapes = []
     groupedRectangles = []
     compRectangles = []
+    resultShape = undefined
+    isolatedShapes = []
 
     svg.clear()
 
