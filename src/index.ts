@@ -6,8 +6,12 @@ import type { PointArrayAlias } from '@svgdotjs/svg.js'
 
 import '@/assets/scss/style.scss'
 
-const DEBUG_DRAW_ENABLED = false
+const DEBUG_DRAW_ENABLED = true
 const MAX_DISTANCE = 200
+const OFFSET = 10
+const OFFSET_OPTION = {
+  jointType: 'jtMiter',
+}
 
 const rectangles: number[][] = [
   [50, 50, 100, 120],
@@ -16,8 +20,8 @@ const rectangles: number[][] = [
   [300, 251, 100, 120],
 
   [100, 150, 100, 120],
-  [500, 350, 100, 120],
-  [650, 450, 100, 120],
+  [500, 350, 50, 50],
+  [650, 450, 50, 50],
 ]
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -206,7 +210,7 @@ type MousePosition = {
   y: number
 }
 
-function rectToShape(x: number, y: number, width: number, height: number) {
+function rectToShape(x: number, y: number, width: number, height: number): Shape {
   let path = [
     [
       { X: x, Y: y },
@@ -487,17 +491,12 @@ const init = () => {
 
     // console.log(resultShape)
 
-    const OFFSET = 20
     // const OFFSET_OPTION = {
     //   // jointType: 'jtRound',
     //   // endType: 'etClosedPolygon',
     //   // miterLimit: 2.0,
     //   roundPrecision: 1,
     // }
-
-    const OFFSET_OPTION = {
-      jointType: 'jtMiter',
-    }
 
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
