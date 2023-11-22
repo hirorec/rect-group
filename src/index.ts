@@ -7,6 +7,7 @@ import type { PointArrayAlias } from '@svgdotjs/svg.js'
 
 import '@/assets/scss/style.scss'
 
+const USE_SVG = true
 const DEBUG_DRAW_ENABLED = true
 const MAX_DISTANCE = 200
 const OFFSET = 10
@@ -507,15 +508,42 @@ const init = () => {
       }
     }
 
+    // console.log(resultShape)
+
     resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
 
-    resultShape?.paths.forEach((path) => {
-      svg
-        .polygon()
-        .plot(pathToArray(path) as PointArrayAlias)
-        .attr({ fill: 'none' })
-        .stroke({ color: 'orange', width: 2, opacity: 1 })
-    })
+    if (USE_SVG) {
+      resultShape?.paths.forEach((path) => {
+        svg
+          .polygon()
+          .plot(pathToArray(path) as PointArrayAlias)
+          .attr({ fill: 'none' })
+          .stroke({ color: 'orange', width: 2, opacity: 1 })
+      })
+    } else {
+      if (ctx) {
+        resultShape?.paths.forEach((paths) => {
+          ctx.beginPath()
+
+          paths.forEach((path, index) => {
+            const x = path.X
+            const y = path.Y
+            // console.log({ x, y })
+
+            if (index === 0) {
+              ctx.moveTo(x, y)
+            } else {
+              ctx.lineTo(x, y)
+            }
+          })
+
+          ctx.closePath()
+          ctx.strokeStyle = 'orange'
+          ctx.lineWidth = 2
+          ctx.stroke()
+        })
+      }
+    }
 
     const isolatedRects = vRects.filter((rect) => {
       return rect.isolated
@@ -525,11 +553,36 @@ const init = () => {
       let shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
       shape = shape.offset(OFFSET, OFFSET_OPTION)
 
-      svg
-        .polygon()
-        .plot(shapeToArray(shape) as PointArrayAlias)
-        .attr({ fill: 'none' })
-        .stroke({ color: 'orange', width: 2, opacity: 1 })
+      if (USE_SVG) {
+        svg
+          .polygon()
+          .plot(shapeToArray(shape) as PointArrayAlias)
+          .attr({ fill: 'none' })
+          .stroke({ color: 'orange', width: 2, opacity: 1 })
+      } else {
+        if (ctx) {
+          shape?.paths.forEach((paths) => {
+            ctx.beginPath()
+
+            paths.forEach((path, index) => {
+              const x = path.X
+              const y = path.Y
+              // console.log({ x, y })
+
+              if (index === 0) {
+                ctx.moveTo(x, y)
+              } else {
+                ctx.lineTo(x, y)
+              }
+            })
+
+            ctx.closePath()
+            ctx.strokeStyle = 'orange'
+            ctx.lineWidth = 2
+            ctx.stroke()
+          })
+        }
+      }
     })
   }
 
