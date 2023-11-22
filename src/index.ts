@@ -32,9 +32,9 @@ const rectangles: number[][] = [
   [300 + 500, 251 + 350, 100, 120],
 
   // [100, 150, 100, 120],
-  // [500, 350, 50, 50],
   // [600, 50, 100, 120],
-  // [620, 250, 50, 50],
+  [100, 600, 50, 50],
+  [680, 250, 50, 50],
 ]
 
 //--------------------
@@ -272,7 +272,7 @@ const init = () => {
   let compRectangles: VRect[] = []
 
   // Shape
-  let resultShape: Shape | undefined
+  let groupedShape: Shape | undefined
   let isolatedShapes: Shape[] = []
 
   // インタラクション系
@@ -429,7 +429,7 @@ const init = () => {
     }
   }
 
-  // Clipper.js用のShapeデータ作成
+  // ClipperJS用のShapeデータ作成
   function setShapes() {
     for (const rect of groupedRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
@@ -443,14 +443,14 @@ const init = () => {
 
     // 各要素のShapeを結合したパス(Shape)を作成
     for (let shape of shapes) {
-      if (!resultShape) {
-        resultShape = shape
+      if (!groupedShape) {
+        groupedShape = shape
       } else {
-        resultShape = resultShape.union(shape)
+        groupedShape = groupedShape.union(shape)
       }
     }
 
-    resultShape = resultShape?.offset(OFFSET, OFFSET_OPTION)
+    groupedShape = groupedShape?.offset(OFFSET, OFFSET_OPTION)
 
     // 孤立した矩形
     const isolatedRects = vRects.filter((rect) => {
@@ -480,10 +480,10 @@ const init = () => {
       return rect
     }
 
-    resultShape?.paths.forEach((path, i) => {
+    groupedShape?.paths.forEach((path, i) => {
       const rect1 = rectFromPath(path)
 
-      resultShape?.paths.forEach((path, j) => {
+      groupedShape?.paths.forEach((path, j) => {
         if (i === j) {
           return
         }
@@ -502,12 +502,12 @@ const init = () => {
     })
 
     if (deletePathIndices.length > 0) {
-      const filteredPaths = resultShape?.paths.filter((_, index) => {
+      const filteredPaths = groupedShape?.paths.filter((_, index) => {
         return !deletePathIndices.includes(index)
       })
 
       if (filteredPaths) {
-        resultShape = new Shape(filteredPaths)
+        groupedShape = new Shape(filteredPaths)
       }
     }
   }
@@ -563,7 +563,7 @@ const init = () => {
   }
 
   function drawShapes() {
-    resultShape?.paths.forEach((path) => {
+    groupedShape?.paths.forEach((path) => {
       svg
         .polygon()
         .plot(pathToArray(path) as PointArrayAlias)
@@ -647,7 +647,7 @@ const init = () => {
     shapes = []
     groupedRectangles = []
     compRectangles = []
-    resultShape = undefined
+    groupedShape = undefined
     isolatedShapes = []
 
     svg.clear()
