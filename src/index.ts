@@ -6,7 +6,7 @@ import type { PointArrayAlias } from '@svgdotjs/svg.js'
 
 import '@/assets/scss/style.scss'
 
-const DEBUG_DRAW_ENABLED = false
+const DEBUG_DRAW_ENABLED = true
 const MAX_DISTANCE = 200
 const OFFSET = 10
 const OFFSET_OPTION = {
@@ -374,7 +374,7 @@ const init = () => {
 
     rects.forEach((rect, i) => {
       let collisionFound = false
-      let foundIndex = -1
+      const foundIndices: number[] = []
 
       rect.vertices.forEach((vertex) => {
         targetRects.forEach((r, j) => {
@@ -389,7 +389,7 @@ const init = () => {
               if (vertex.vector.y === vLine.vector.y || vertex.vector.x === vLine.vector.x) {
                 vLines.push(vLine)
                 collisionFound = true
-                foundIndex = j
+                foundIndices.push(j)
               }
             }
           }
@@ -401,13 +401,13 @@ const init = () => {
         clone.isolated = false
         newGroupedRectangles.push(clone)
 
-        if (foundIndex >= 0) {
+        foundIndices.forEach((index) => {
           // TODO IDで重複除外
-          const rect = targetRects[foundIndex]
+          const rect = targetRects[index]
           const clone = rect.clone()
           clone.isolated = false
           newGroupedRectangles.push(clone)
-        }
+        })
       } else {
         if (isSecond) {
           rect.isolated = true
