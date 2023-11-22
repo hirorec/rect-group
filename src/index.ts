@@ -544,6 +544,37 @@ const init = () => {
     })
   }
 
+  function update() {
+    // reset
+    vRects = []
+    shapes = []
+    groupedRectangles = []
+    compRectangles = []
+    resultShape = undefined
+    isolatedShapes = []
+
+    svg.clear()
+
+    if (ctx) {
+      ctx.clearRect(0, 0, 1000, 1000)
+    }
+
+    // logic
+    setVRects()
+    setGroupedRectangles(vRects, vRects)
+    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
+    setShapes()
+
+    // draw
+    drawBaseRectangles()
+    drawCompRectangles()
+    drawVLines()
+    drawShapes()
+  }
+
+  update()
+
+  // インタラクション系
   const getHitIndex = (mouseX: number, mouseY: number): number | null => {
     const foundIndex = rectangles.findIndex((rect: number[]) => {
       const [x, y, width, height] = rect
@@ -599,41 +630,4 @@ const init = () => {
   window.addEventListener('mousedown', onMouseDown)
   window.addEventListener('mouseup', onMouseUp)
   window.addEventListener('mousemove', onMouseMove)
-
-  function update() {
-    // reset
-    vRects = []
-    shapes = []
-    groupedRectangles = []
-    compRectangles = []
-    resultShape = undefined
-    isolatedShapes = []
-
-    svg.clear()
-
-    if (ctx) {
-      ctx.clearRect(0, 0, 1000, 1000)
-    }
-
-    setVRects()
-    setGroupedRectangles(vRects, vRects)
-    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
-    setShapes()
-
-    // 描画
-    drawBaseRectangles()
-    drawCompRectangles()
-    drawVLines()
-    drawShapes()
-  }
-
-  update()
-
-  // const onResize = () => {
-  //   canvas.width = window.innerWidth
-  //   canvas.height = window.innerHeight
-  // }
-
-  // // window.addEventListener('resize', onResize)
-  // onResize()
 }
