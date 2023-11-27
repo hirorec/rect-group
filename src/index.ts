@@ -198,19 +198,19 @@ function rectToShape(x: number, y: number, width: number, height: number): Shape
   return new Shape(path)
 }
 
-function shapeToArray(shape: any): PointArrayAlias {
-  let paths: number[][] = []
+function shapeToArray(shape: Shape): PointArrayAlias {
+  const paths: number[][] = []
 
-  for (let p of shape.paths[0]) {
+  for (const p of shape.paths[0]) {
     paths.push([p.X, p.Y])
   }
   return paths as PointArrayAlias
 }
 
-function pathToArray(path: any): PointArrayAlias {
-  let paths: number[][] = []
+function pathToArray(path: Point[]): PointArrayAlias {
+  const paths: number[][] = []
   // console.log(path[0])
-  for (let p of path) {
+  for (const p of path) {
     paths.push([p.X, p.Y])
   }
 
@@ -221,14 +221,12 @@ function lineToGroup(lines: VLine[]): VLine[][] {
   let index = 0
 
   return lines.reduce((group: VLine[][], line: VLine) => {
-    let newGroup: VLine[][] = [...group]
+    const newGroup: VLine[][] = [...group]
 
     if (group.length <= 0) {
       newGroup[index] = []
       newGroup[index].push(line)
     } else {
-      let result = false
-
       for (let i = 0; i < group.length; i++) {
         const lines = group[i]
 
@@ -243,11 +241,9 @@ function lineToGroup(lines: VLine[]): VLine[][] {
         })
       }
 
-      if (!result) {
-        index++
-        newGroup[index] = []
-        newGroup[index].push(line)
-      }
+      index++
+      newGroup[index] = []
+      newGroup[index].push(line)
     }
 
     return newGroup
