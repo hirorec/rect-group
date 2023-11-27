@@ -1,4 +1,4 @@
-import _, { forEachRight } from 'lodash'
+import _ from 'lodash'
 import Shape from '@doodle3d/clipper-js'
 import { SVG } from '@svgdotjs/svg.js'
 import { v4 as uuidv4 } from 'uuid'
@@ -16,7 +16,7 @@ type MousePosition = {
 
 const DEBUG_DRAW_ENABLED = false
 const MAX_DISTANCE = 200
-const OFFSET = 10
+const OFFSET = 30
 const OFFSET_OPTION = {
   jointType: 'jtMiter',
 }
