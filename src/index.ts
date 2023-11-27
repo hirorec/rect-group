@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { PointArrayAlias } from '@svgdotjs/svg.js'
 import type { Point } from '@doodle3d/clipper-js'
+import type { Svg } from '@svgdotjs/svg.js'
 
 import '@/assets/scss/style.scss'
 
@@ -253,34 +254,44 @@ function lineToGroup(lines: VLine[]): VLine[][] {
   }, [])
 }
 
-const init = () => {
-  const canvas = document.getElementById('myCanvas') as HTMLCanvasElement
-  const ctx = canvas.getContext('2d')
-  const svg = SVG().addTo('body').size(1000, 1000)
+class StructuresGroupApp {
+  canvas: HTMLCanvasElement
+  ctx: CanvasRenderingContext2D
+  svg: Svg
 
-  let vRects: VRect[] = []
-  let shapes: Shape[] = []
-  let vLines: VLine[] = []
-  let vLinesAll: VLine[] = []
+  vRects: VRect[] = []
+  shapes: Shape[] = []
+  vLines: VLine[] = []
+  vLinesAll: VLine[] = []
 
   // 接続可能な矩形
-  let groupedRectangles: VRect[] = []
-  let compRectangles: VRect[] = []
+  groupedRectangles: VRect[] = []
+  compRectangles: VRect[] = []
 
   // Shape
-  let groupedShape: Shape | undefined
-  let isolatedShapes: Shape[] = []
+  groupedShape: Shape | undefined
+  isolatedShapes: Shape[] = []
 
   // インタラクション系
-  let isMouseDown = false
-  let selectedIndex: number | null = null
-  const mousePosition: MousePosition = { x: 0, y: 0 }
+  isMouseDown = false
+  selectedIndex: number | null = null
+  mousePosition: MousePosition = { x: 0, y: 0 }
+
+  constructor() {
+    this.canvas = document.getElementById('myCanvas') as HTMLCanvasElement
+    this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+    this.svg = SVG().addTo('body').size(1000, 1000)
+
+    window.addEventListener('mousedown', this.onMouseDown.bind(this))
+    window.addEventListener('mouseup', this.onMouseUp.bind(this))
+    window.addEventListener('mousemove', this.onMouseMove.bind(this))
+  }
 
   //--------------------
   // ロジック系
   //--------------------
 
-  function setVRects() {
+  private setVRects() {
     for (const rect of rectangles) {
       const [x, y, width, height] = rect
 
@@ -330,13 +341,13 @@ const init = () => {
 
       const vRect: VRect = new VRect(uuidv4(), [v1, v2, v3, v4], width, height)
 
-      vRects.push(vRect)
+      this.vRects.push(vRect)
     }
   }
 
-  function setGroupedRectangles(rects: VRect[], targetRects: VRect[], isSecond: boolean = false) {
-    vLines = []
-    vLinesAll = []
+  private setGroupedRectangles(rects: VRect[], targetRects: VRect[], isSecond: boolean = false) {
+    this.vLines = []
+    this.vLinesAll = []
     const newGroupedRectangles: VRect[] = []
 
     rects.forEach((rect, i) => {
@@ -350,11 +361,11 @@ const init = () => {
             const vLine = r.collisionLine(vertex)
 
             if (vLine) {
-              vLinesAll.push(vLine)
+              this.vLinesAll.push(vLine)
 
               // 頂点と線の方向が一致したもののみ
               if (vertex.vector.y === vLine.vector.y || vertex.vector.x === vLine.vector.x) {
-                vLines.push(vLine)
+                this.vLines.push(vLine)
                 collisionFound = true
                 foundIndices.push(j)
               }
@@ -381,23 +392,23 @@ const init = () => {
         })
       } else {
         if (isSecond) {
-          if (!groupedRectangles.find((r) => r.id === rect.id)) {
+          if (!this.groupedRectangles.find((r) => r.id === rect.id)) {
             rect.isolated = true
           }
         }
       }
     })
 
-    groupedRectangles = newGroupedRectangles
+    this.groupedRectangles = newGroupedRectangles
 
-    let group = lineToGroup(vLines) as VLine[][]
+    let group = lineToGroup(this.vLines) as VLine[][]
 
     group = group.filter((lines: VLine[]) => {
       return lines.length >= 2
     })
 
     // reset
-    compRectangles = []
+    this.compRectangles = []
 
     for (const key in group) {
       const lines: VLine[] = group[key]
@@ -421,47 +432,47 @@ const init = () => {
       const v4 = new VertexWithVector({ x: -1, y: 1 }, x, y + height, 'bl')
 
       const rect = new VRect(uuidv4(), [v1, v2, v3, v4], width, height, true)
-      compRectangles.push(rect)
+      this.compRectangles.push(rect)
     }
   }
 
   // ClipperJS用のShapeデータ作成
-  function setShapes() {
-    for (const rect of groupedRectangles) {
+  private setShapes() {
+    for (const rect of this.groupedRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
-      shapes.push(shape)
+      this.shapes.push(shape)
     }
 
-    for (const rect of compRectangles) {
+    for (const rect of this.compRectangles) {
       const shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
-      shapes.push(shape)
+      this.shapes.push(shape)
     }
 
     // 各要素のShapeを結合したパス(Shape)を作成
-    for (let shape of shapes) {
-      if (!groupedShape) {
-        groupedShape = shape
+    for (let shape of this.shapes) {
+      if (!this.groupedShape) {
+        this.groupedShape = shape
       } else {
-        groupedShape = groupedShape.union(shape)
+        this.groupedShape = this.groupedShape.union(shape)
       }
     }
 
-    groupedShape = groupedShape?.offset(OFFSET, OFFSET_OPTION)
+    this.groupedShape = this.groupedShape?.offset(OFFSET, OFFSET_OPTION)
 
     // 孤立した矩形
-    const isolatedRects = vRects.filter((rect) => {
+    const isolatedRects = this.vRects.filter((rect) => {
       return rect.isolated
     })
 
     isolatedRects.forEach((rect) => {
       let shape = rectToShape(rect.x, rect.y, rect.width, rect.height)
       shape = shape.offset(OFFSET, OFFSET_OPTION)
-      isolatedShapes.push(shape)
+      this.isolatedShapes.push(shape)
     })
   }
 
   // 空洞の削除
-  function removeShapeCavity() {
+  private removeShapeCavity() {
     const deletePathIndices: number[] = []
     const rectFromPath = (path: Point[]): Rect => {
       const xList = path.map((p) => p.X)
@@ -476,10 +487,10 @@ const init = () => {
       return rect
     }
 
-    groupedShape?.paths.forEach((path, i) => {
+    this.groupedShape?.paths.forEach((path, i) => {
       const rect1 = rectFromPath(path)
 
-      groupedShape?.paths.forEach((path, j) => {
+      this.groupedShape?.paths.forEach((path, j) => {
         if (i === j) {
           return
         }
@@ -498,12 +509,12 @@ const init = () => {
     })
 
     if (deletePathIndices.length > 0) {
-      const filteredPaths = groupedShape?.paths.filter((_, index) => {
+      const filteredPaths = this.groupedShape?.paths.filter((_, index) => {
         return !deletePathIndices.includes(index)
       })
 
       if (filteredPaths) {
-        groupedShape = new Shape(filteredPaths)
+        this.groupedShape = new Shape(filteredPaths)
       }
     }
   }
@@ -513,62 +524,62 @@ const init = () => {
   //--------------------
 
   // ベース矩形を描画
-  function drawBaseRectangles() {
-    if (ctx) {
+  private drawBaseRectangles() {
+    if (this.ctx) {
       for (const rect of rectangles) {
         const [x, y, width, height] = rect
-        ctx.beginPath()
-        ctx.rect(x, y, width, height)
-        ctx.strokeStyle = '#000'
-        ctx.stroke()
-        ctx.fillStyle = '#ccc'
-        ctx.fill()
+        this.ctx.beginPath()
+        this.ctx.rect(x, y, width, height)
+        this.ctx.strokeStyle = '#000'
+        this.ctx.stroke()
+        this.ctx.fillStyle = '#ccc'
+        this.ctx.fill()
       }
     }
   }
 
   // 補完矩形の描画
-  function drawCompRectangles() {
-    if (ctx && DEBUG_DRAW_ENABLED) {
-      compRectangles.forEach((rect) => {
-        ctx.beginPath()
-        ctx.rect(rect.x, rect.y, rect.width, rect.height)
-        ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
-        ctx.fill()
+  private drawCompRectangles() {
+    if (this.ctx && DEBUG_DRAW_ENABLED) {
+      this.compRectangles.forEach((rect) => {
+        this.ctx.beginPath()
+        this.ctx.rect(rect.x, rect.y, rect.width, rect.height)
+        this.ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
+        this.ctx.fill()
       })
     }
   }
 
   // 衝突線の描画
-  function drawVLines() {
-    if (ctx && DEBUG_DRAW_ENABLED) {
-      vLinesAll.forEach((line) => {
-        ctx.beginPath()
+  private drawVLines() {
+    if (this.ctx && DEBUG_DRAW_ENABLED) {
+      this.vLinesAll.forEach((line) => {
+        this.ctx.beginPath()
 
         if (line.vector.y > 0 || line.vector.x > 0) {
-          ctx.strokeStyle = '#ff0000'
+          this.ctx.strokeStyle = '#ff0000'
         } else {
-          ctx.strokeStyle = '#00ff00'
+          this.ctx.strokeStyle = '#00ff00'
         }
 
-        ctx.moveTo(line.v1.x, line.v1.y)
-        ctx.lineTo(line.v2.x, line.v2.y)
-        ctx.stroke()
+        this.ctx.moveTo(line.v1.x, line.v1.y)
+        this.ctx.lineTo(line.v2.x, line.v2.y)
+        this.ctx.stroke()
       })
     }
   }
 
-  function drawShapes() {
-    groupedShape?.paths.forEach((path) => {
-      svg
+  private drawShapes() {
+    this.groupedShape?.paths.forEach((path) => {
+      this.svg
         .polygon()
         .plot(pathToArray(path) as PointArrayAlias)
         .attr({ fill: 'none' })
         .stroke({ color: 'orange', width: 2, opacity: 1 })
     })
 
-    isolatedShapes.forEach((shape) => {
-      svg
+    this.isolatedShapes.forEach((shape) => {
+      this.svg
         .polygon()
         .plot(shapeToArray(shape) as PointArrayAlias)
         .attr({ fill: 'none' })
@@ -580,7 +591,7 @@ const init = () => {
   // インタラクション系
   //--------------------
 
-  const getHitIndex = (mouseX: number, mouseY: number): number | null => {
+  private getHitIndex(mouseX: number, mouseY: number): number | null {
     const foundIndex = rectangles.findIndex((rect: number[]) => {
       const [x, y, width, height] = rect
 
@@ -598,75 +609,67 @@ const init = () => {
     return null
   }
 
-  const onMouseDown = (event: MouseEvent) => {
-    isMouseDown = true
+  private onMouseDown(event: MouseEvent) {
+    this.isMouseDown = true
 
     const x = event.clientX
     const y = event.clientY
-    const index = getHitIndex(x, y)
+    const index = this.getHitIndex(x, y)
 
-    mousePosition.x = x
-    mousePosition.y = y
-    selectedIndex = index
+    this.mousePosition.x = x
+    this.mousePosition.y = y
+    this.selectedIndex = index
   }
 
-  const onMouseUp = () => {
-    isMouseDown = false
+  private onMouseUp() {
+    this.isMouseDown = false
   }
 
-  const onMouseMove = (event: MouseEvent) => {
-    if (isMouseDown) {
-      if (selectedIndex !== null && selectedIndex >= 0) {
+  private onMouseMove(event: MouseEvent) {
+    if (this.isMouseDown) {
+      if (this.selectedIndex !== null && this.selectedIndex >= 0) {
         const x = event.clientX
         const y = event.clientY
-        mousePosition.x = x
-        mousePosition.y = y
-        rectangles[selectedIndex][0] = mousePosition.x - 50
-        rectangles[selectedIndex][1] = mousePosition.y - 50
+        this.mousePosition.x = x
+        this.mousePosition.y = y
+        rectangles[this.selectedIndex][0] = this.mousePosition.x - 50
+        rectangles[this.selectedIndex][1] = this.mousePosition.y - 50
       }
 
-      update()
+      this.update()
     }
   }
 
-  window.addEventListener('mousedown', onMouseDown)
-  window.addEventListener('mouseup', onMouseUp)
-  window.addEventListener('mousemove', onMouseMove)
-
-  //--------------------
-  // execute
-  //--------------------
-
-  function update() {
+  public update() {
     // reset
-    vRects = []
-    shapes = []
-    groupedRectangles = []
-    compRectangles = []
-    groupedShape = undefined
-    isolatedShapes = []
+    this.vRects = []
+    this.shapes = []
+    this.groupedRectangles = []
+    this.compRectangles = []
+    this.groupedShape = undefined
+    this.isolatedShapes = []
 
-    svg.clear()
+    this.svg.clear()
 
-    if (ctx) {
-      ctx.clearRect(0, 0, 1000, 1000)
+    if (this.ctx) {
+      this.ctx.clearRect(0, 0, 1000, 1000)
     }
 
     // logic
-    setVRects()
-    setGroupedRectangles(vRects, vRects)
-    setGroupedRectangles(vRects, vRects.concat(compRectangles), true)
-    setShapes()
-    removeShapeCavity()
+    this.setVRects()
+    this.setGroupedRectangles(this.vRects, this.vRects)
+    this.setGroupedRectangles(this.vRects, this.vRects.concat(this.compRectangles), true)
+    this.setShapes()
+    this.removeShapeCavity()
 
     // draw
-    drawBaseRectangles()
-    drawCompRectangles()
-    drawVLines()
-    drawShapes()
+    this.drawBaseRectangles()
+    this.drawCompRectangles()
+    this.drawVLines()
+    this.drawShapes()
   }
-
-  update()
 }
 
-document.addEventListener('DOMContentLoaded', init)
+document.addEventListener('DOMContentLoaded', () => {
+  new StructuresGroupApp().update()
+})
