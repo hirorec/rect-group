@@ -14,8 +14,8 @@ type MousePosition = {
   y: number
 }
 
-const DEBUG_DRAW_ENABLED = false
-const MAX_DISTANCE = 200
+const DEBUG_DRAW_ENABLED = true
+const DISTANCE_THRESHOLD = 200
 const OFFSET = 30
 const OFFSET_OPTION = {
   jointType: 'jtMiter',
@@ -170,7 +170,7 @@ class VRect {
       }
     }
 
-    if (line && line.distance < MAX_DISTANCE) {
+    if (line && line.distance < DISTANCE_THRESHOLD) {
       return line
     } else {
       return null
@@ -505,6 +505,18 @@ class StructuresGroup {
   // インタラクション系
   //--------------------
 
+  public destroy() {
+    this.rects = []
+    this.vRects = []
+    this.shapes = []
+    this.groupedRectangles = []
+    this.compRectangles = []
+    this.groupedShape = undefined
+    this.isolatedShapes = []
+    this.vLines = []
+    this.vLinesAll = []
+  }
+
   public update() {
     // reset
     this.vRects = []
@@ -545,6 +557,10 @@ class Drawer {
   }
 
   public setGroups(groups: StructuresGroup[]) {
+    this.groups.forEach((group) => {
+      group.destroy()
+    })
+
     this.groups = groups
   }
 
@@ -745,12 +761,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const group = new StructuresGroup()
     group.setRects(rects)
-    group.update()
     groups.push(group)
   })
 
   const drawer = new Drawer()
   drawer.setGroups(groups)
   drawer.draw()
-  console.log(groups)
 })
