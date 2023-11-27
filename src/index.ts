@@ -201,7 +201,7 @@ class StructuresGroupApp {
   //--------------------
 
   private rectToShape(x: number, y: number, width: number, height: number): Shape {
-    let path = [
+    const path = [
       [
         { X: x, Y: y },
         { X: x, Y: y + height },
@@ -365,18 +365,14 @@ class StructuresGroupApp {
           const clone = rect.clone()
           clone.isolated = false
 
-          const found = newGroupedRectangles.find((r) => r.id === rect.id)
+          const found = newGroupedRectangles.find((r: VRect) => r.id === rect.id)
 
           if (!found) {
             newGroupedRectangles.push(clone)
           }
         })
-      } else {
-        if (isSecond) {
-          if (!this.groupedRectangles.find((r) => r.id === rect.id)) {
-            rect.isolated = true
-          }
-        }
+      } else if (isSecond && !this.groupedRectangles.find((r: VRect) => r.id === rect.id)) {
+        rect.isolated = true
       }
     })
 
@@ -400,8 +396,8 @@ class StructuresGroupApp {
         new Vertex(lines[1].v2.x, lines[1].v2.y),
       ]
 
-      const xList = vertices.map((v) => v.x)
-      const yList = vertices.map((v) => v.y)
+      const xList = vertices.map((v: Vertex) => v.x)
+      const yList = vertices.map((v: Vertex) => v.y)
       const x = Math.min(...xList)
       const y = Math.min(...yList)
       const width = Math.max(...xList) - x
@@ -430,7 +426,7 @@ class StructuresGroupApp {
     }
 
     // 各要素のShapeを結合したパス(Shape)を作成
-    for (let shape of this.shapes) {
+    for (const shape of this.shapes) {
       if (!this.groupedShape) {
         this.groupedShape = shape
       } else {
@@ -456,8 +452,8 @@ class StructuresGroupApp {
   private removeShapeCavity() {
     const deletePathIndices: number[] = []
     const rectFromPath = (path: Point[]): Rect => {
-      const xList = path.map((p) => p.X)
-      const yList = path.map((p) => p.Y)
+      const xList = path.map((p: Point) => p.X)
+      const yList = path.map((p: Point) => p.Y)
       const minX = Math.min(...xList)
       const maxX = Math.max(...xList)
       const minY = Math.min(...yList)
@@ -594,7 +590,7 @@ class Drawer {
         }
       }
 
-      this.update()
+      this.draw()
     }
   }
 
@@ -666,7 +662,7 @@ class Drawer {
     })
   }
 
-  public update() {
+  public draw() {
     this.app.update()
 
     this.svg.clear()
@@ -697,6 +693,5 @@ document.addEventListener('DOMContentLoaded', () => {
   app.setRects(rects)
 
   const drawer = new Drawer(app)
-
-  drawer.update()
+  drawer.draw()
 })
