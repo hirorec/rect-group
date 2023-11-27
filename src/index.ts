@@ -22,7 +22,7 @@ const OFFSET_OPTION = {
 }
 
 const RECTANGLES1: number[][] = [
-  [50, 50, 100, 120],
+  [50 + 50, 50 + 50, 100, 120],
   [300, 50, 100, 120],
   [60, 250, 100, 120],
   [300, 251, 100, 120],
@@ -90,7 +90,7 @@ class VRect {
     return this.vertices[0].y
   }
 
-  public collisionLine(vertex: VertexWithVector): VLine | null {
+  public getCollisionLine(vertex: VertexWithVector): VLine | null {
     let line: VLine | null = null
 
     if (vertex.x >= this.x && vertex.x <= this.x + this.width) {
@@ -344,7 +344,7 @@ class StructuresGroup {
         targetRects.forEach((r, j) => {
           // 自分自身は除外
           if (i !== j) {
-            const vLine = r.collisionLine(vertex)
+            const vLine = r.getCollisionLine(vertex)
 
             if (vLine) {
               this.vLinesAll.push(vLine)
@@ -671,6 +671,27 @@ class Drawer {
           .plot(StructuresGroup.pathToArray(path) as PointArrayAlias)
           .attr({ fill: 'none' })
           .stroke({ color: 'orange', width: 2, opacity: 1 })
+
+        const p = path.reduce((a: Point | null, b: Point) => {
+          if (a) {
+            const x1 = a.X
+            const y1 = a.Y
+            const x2 = b.X
+            const y2 = b.Y
+
+            if (x2 < x1 && y2 < y1) {
+              return b
+            }
+
+            return a
+          }
+
+          return b
+        }, null)
+
+        if (p) {
+          this.svg.text('label').move(p.X, p.Y)
+        }
       })
 
       group.isolatedShapes.forEach((shape) => {
@@ -679,6 +700,12 @@ class Drawer {
           .plot(StructuresGroup.shapeToArray(shape) as PointArrayAlias)
           .attr({ fill: 'none' })
           .stroke({ color: 'red', width: 2, opacity: 1 })
+
+        const xList = shape.paths[0].map((p: Point) => p.X)
+        const yList = shape.paths[0].map((p: Point) => p.Y)
+        const x = Math.min(...xList)
+        const y = Math.min(...yList)
+        this.svg.text('label').move(x, y)
       })
     }
   }
@@ -718,10 +745,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const group = new StructuresGroup()
     group.setRects(rects)
+    group.update()
     groups.push(group)
   })
 
   const drawer = new Drawer()
   drawer.setGroups(groups)
   drawer.draw()
+  console.log(groups)
 })
