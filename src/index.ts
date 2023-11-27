@@ -108,25 +108,23 @@ class VRect {
 
           line = new VLine(vector, v1, v2)
         }
-      } else {
-        if (vertex.label === 'bl' || vertex.label === 'br') {
-          const v1: Vertex = {
-            x: vertex.x,
-            y: vertex.y,
-          }
-
-          const v2: Vertex = {
-            x: vertex.x,
-            y: this.y,
-          }
-
-          const vector: Vector = {
-            x: 0,
-            y: 1,
-          }
-
-          line = new VLine(vector, v1, v2)
+      } else if (vertex.label === 'bl' || vertex.label === 'br') {
+        const v1: Vertex = {
+          x: vertex.x,
+          y: vertex.y,
         }
+
+        const v2: Vertex = {
+          x: vertex.x,
+          y: this.y,
+        }
+
+        const vector: Vector = {
+          x: 0,
+          y: 1,
+        }
+
+        line = new VLine(vector, v1, v2)
       }
     }
 
@@ -150,22 +148,20 @@ class VRect {
 
           line = new VLine(vector, v1, v2)
         }
-      } else {
-        if (vertex.label === 'tr' || vertex.label === 'br') {
-          const v1: Vertex = {
-            x: vertex.x,
-            y: vertex.y,
-          }
-          const v2: Vertex = {
-            x: this.x,
-            y: vertex.y,
-          }
-          const vector: Vector = {
-            x: 1,
-            y: 0,
-          }
-          line = new VLine(vector, v1, v2)
+      } else if (vertex.label === 'tr' || vertex.label === 'br') {
+        const v1: Vertex = {
+          x: vertex.x,
+          y: vertex.y,
         }
+        const v2: Vertex = {
+          x: this.x,
+          y: vertex.y,
+        }
+        const vector: Vector = {
+          x: 1,
+          y: 0,
+        }
+        line = new VLine(vector, v1, v2)
       }
     }
 
