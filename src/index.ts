@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _, { forEachRight } from 'lodash'
 import Shape from '@doodle3d/clipper-js'
 import { SVG } from '@svgdotjs/svg.js'
 import { v4 as uuidv4 } from 'uuid'
@@ -20,22 +20,27 @@ const OFFSET = 10
 const OFFSET_OPTION = {
   jointType: 'jtMiter',
 }
-const RECTANGLES: number[][] = [
+
+const RECTANGLES1: number[][] = [
   [50, 50, 100, 120],
   [300, 50, 100, 120],
   [60, 250, 100, 120],
   [300, 251, 100, 120],
+]
 
+const RECTANGLES2: number[][] = [
   [50 + 500, 50 + 350, 100, 120],
   [300 + 520, 50 + 320, 100, 120],
   [60 + 500, 250 + 350, 100, 120],
   [300 + 500, 251 + 350, 100, 120],
+]
 
-  // [100, 150, 100, 120],
-  // [600, 50, 100, 120],
+const RECTANGLES3: number[][] = [
   [100, 600, 50, 50],
   [680, 250, 50, 50],
 ]
+
+const RECTANGLES = [RECTANGLES1, RECTANGLES2, RECTANGLES3]
 
 //--------------------
 // Classes
@@ -178,10 +183,10 @@ class VRect {
 }
 
 class Rect {
-  constructor(public x: number, public y: number, public readonly width: number, public readonly height: number) {}
+  constructor(public x: number, public y: number, public readonly width: number, public readonly height: number, public readonly id: string) {}
 }
 
-class StructuresGroupApp {
+class StructuresGroup {
   public rects: Rect[] = []
   private vRects: VRect[] = []
   private shapes: Shape[] = []
@@ -200,7 +205,7 @@ class StructuresGroupApp {
   // Utility
   //--------------------
 
-  private rectToShape(x: number, y: number, width: number, height: number): Shape {
+  private static rectToShape(x: number, y: number, width: number, height: number): Shape {
     const path = [
       [
         { X: x, Y: y },
@@ -212,7 +217,7 @@ class StructuresGroupApp {
     return new Shape(path)
   }
 
-  public shapeToArray(shape: Shape): PointArrayAlias {
+  public static shapeToArray(shape: Shape): PointArrayAlias {
     const paths: number[][] = []
 
     for (const p of shape.paths[0]) {
@@ -221,7 +226,7 @@ class StructuresGroupApp {
     return paths as PointArrayAlias
   }
 
-  public pathToArray(path: Point[]): PointArrayAlias {
+  public static pathToArray(path: Point[]): PointArrayAlias {
     const paths: number[][] = []
     // console.log(path[0])
     for (const p of path) {
@@ -231,7 +236,7 @@ class StructuresGroupApp {
     return paths as PointArrayAlias
   }
 
-  private lineToGroup(lines: VLine[]): VLine[][] {
+  private static lineToGroup(lines: VLine[]): VLine[][] {
     let index = 0
 
     return lines.reduce((group: VLine[][], line: VLine) => {
@@ -378,7 +383,7 @@ class StructuresGroupApp {
 
     this.groupedRectangles = newGroupedRectangles
 
-    let group = this.lineToGroup(this.vLines) as VLine[][]
+    let group = StructuresGroup.lineToGroup(this.vLines) as VLine[][]
 
     group = group.filter((lines: VLine[]) => {
       return lines.length >= 2
@@ -416,12 +421,12 @@ class StructuresGroupApp {
   // ClipperJS用のShapeデータ作成
   private setShapes() {
     for (const rect of this.groupedRectangles) {
-      const shape = this.rectToShape(rect.x, rect.y, rect.width, rect.height)
+      const shape = StructuresGroup.rectToShape(rect.x, rect.y, rect.width, rect.height)
       this.shapes.push(shape)
     }
 
     for (const rect of this.compRectangles) {
-      const shape = this.rectToShape(rect.x, rect.y, rect.width, rect.height)
+      const shape = StructuresGroup.rectToShape(rect.x, rect.y, rect.width, rect.height)
       this.shapes.push(shape)
     }
 
@@ -442,7 +447,7 @@ class StructuresGroupApp {
     })
 
     isolatedRects.forEach((rect) => {
-      let shape = this.rectToShape(rect.x, rect.y, rect.width, rect.height)
+      let shape = StructuresGroup.rectToShape(rect.x, rect.y, rect.width, rect.height)
       shape = shape.offset(OFFSET, OFFSET_OPTION)
       this.isolatedShapes.push(shape)
     })
@@ -460,7 +465,7 @@ class StructuresGroupApp {
       const maxY = Math.max(...yList)
       const width = maxX - minX
       const height = maxY - minY
-      const rect = new Rect(minX, minY, width, height)
+      const rect = new Rect(minX, minY, width, height, uuidv4())
       return rect
     }
 
@@ -519,18 +524,17 @@ class StructuresGroupApp {
 }
 
 class Drawer {
-  public readonly app: StructuresGroupApp
+  public groups: StructuresGroup[] = []
   private readonly canvas: HTMLCanvasElement
   private readonly ctx: CanvasRenderingContext2D
   private readonly svg: Svg
 
   // インタラクション系
   private isMouseDown = false
-  private selectedIndex: number | null = null
+  private selectedId: string | null = null
   private readonly mousePosition: MousePosition = { x: 0, y: 0 }
 
-  constructor(app: StructuresGroupApp) {
-    this.app = app
+  constructor() {
     this.canvas = document.getElementById('myCanvas') as HTMLCanvasElement
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
     this.svg = SVG().addTo('body').size(1000, 1000)
@@ -540,22 +544,25 @@ class Drawer {
     window.addEventListener('mousemove', this.onMouseMove.bind(this))
   }
 
-  private getHitIndex(mouseX: number, mouseY: number): number | null {
-    const foundIndex = this.app.rects.findIndex((rect: Rect) => {
-      const { x, y, width, height } = rect
+  public setGroups(groups: StructuresGroup[]) {
+    this.groups = groups
+  }
 
-      if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
-        return true
-      }
+  private getHitId(mouseX: number, mouseY: number): string | null {
+    let id: string | null = null
 
-      return false
+    this.groups.forEach((group) => {
+      group.rects.forEach((rect) => {
+        const { x, y, width, height } = rect
+
+        if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
+          id = rect.id
+          return
+        }
+      })
     })
 
-    if (foundIndex >= 0) {
-      return foundIndex
-    }
-
-    return null
+    return id
   }
 
   private onMouseDown(event: MouseEvent) {
@@ -563,11 +570,9 @@ class Drawer {
 
     const x = event.clientX
     const y = event.clientY
-    const index = this.getHitIndex(x, y)
-
     this.mousePosition.x = x
     this.mousePosition.y = y
-    this.selectedIndex = index
+    this.selectedId = this.getHitId(x, y)
   }
 
   onMouseUp() {
@@ -576,15 +581,23 @@ class Drawer {
 
   onMouseMove(event: MouseEvent) {
     if (this.isMouseDown) {
-      if (this.selectedIndex !== null && this.selectedIndex >= 0) {
+      if (this.selectedId !== null) {
         const x = event.clientX
         const y = event.clientY
         this.mousePosition.x = x
         this.mousePosition.y = y
+        let foundRect: Rect | null = null
 
-        const rect = this.app.rects[this.selectedIndex]
+        this.groups.forEach((group) => {
+          group.rects.forEach((rect) => {
+            if (rect.id === this.selectedId) {
+              foundRect = rect
+            }
+          })
+        })
 
-        if (rect) {
+        if (foundRect) {
+          const rect = foundRect as Rect
           rect.x = this.mousePosition.x - 50
           rect.y = this.mousePosition.y - 50
         }
@@ -601,14 +614,16 @@ class Drawer {
   // ベース矩形を描画
   private drawBaseRectangles() {
     if (this.ctx) {
-      for (const rect of this.app.rects) {
-        const { x, y, width, height } = rect
-        this.ctx.beginPath()
-        this.ctx.rect(x, y, width, height)
-        this.ctx.strokeStyle = '#000'
-        this.ctx.stroke()
-        this.ctx.fillStyle = '#ccc'
-        this.ctx.fill()
+      for (const group of this.groups) {
+        for (const rect of group.rects) {
+          const { x, y, width, height } = rect
+          this.ctx.beginPath()
+          this.ctx.rect(x, y, width, height)
+          this.ctx.strokeStyle = '#000'
+          this.ctx.stroke()
+          this.ctx.fillStyle = '#ccc'
+          this.ctx.fill()
+        }
       }
     }
   }
@@ -616,54 +631,62 @@ class Drawer {
   // 補完矩形の描画
   private drawCompRectangles() {
     if (this.ctx && DEBUG_DRAW_ENABLED) {
-      this.app.compRectangles.forEach((rect) => {
-        this.ctx.beginPath()
-        this.ctx.rect(rect.x, rect.y, rect.width, rect.height)
-        this.ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
-        this.ctx.fill()
-      })
+      for (const group of this.groups) {
+        group.compRectangles.forEach((rect) => {
+          this.ctx.beginPath()
+          this.ctx.rect(rect.x, rect.y, rect.width, rect.height)
+          this.ctx.fillStyle = 'rgba(0, 0, 255, 0.2)'
+          this.ctx.fill()
+        })
+      }
     }
   }
 
   // 衝突線の描画
   private drawVLines() {
     if (this.ctx && DEBUG_DRAW_ENABLED) {
-      this.app.vLinesAll.forEach((line) => {
-        this.ctx.beginPath()
+      for (const group of this.groups) {
+        group.vLinesAll.forEach((line) => {
+          this.ctx.beginPath()
 
-        if (line.vector.y > 0 || line.vector.x > 0) {
-          this.ctx.strokeStyle = '#ff0000'
-        } else {
-          this.ctx.strokeStyle = '#00ff00'
-        }
+          if (line.vector.y > 0 || line.vector.x > 0) {
+            this.ctx.strokeStyle = '#ff0000'
+          } else {
+            this.ctx.strokeStyle = '#00ff00'
+          }
 
-        this.ctx.moveTo(line.v1.x, line.v1.y)
-        this.ctx.lineTo(line.v2.x, line.v2.y)
-        this.ctx.stroke()
-      })
+          this.ctx.moveTo(line.v1.x, line.v1.y)
+          this.ctx.lineTo(line.v2.x, line.v2.y)
+          this.ctx.stroke()
+        })
+      }
     }
   }
 
   private drawShapes() {
-    this.app.groupedShape?.paths.forEach((path) => {
-      this.svg
-        .polygon()
-        .plot(this.app.pathToArray(path) as PointArrayAlias)
-        .attr({ fill: 'none' })
-        .stroke({ color: 'orange', width: 2, opacity: 1 })
-    })
+    for (const group of this.groups) {
+      group.groupedShape?.paths.forEach((path) => {
+        this.svg
+          .polygon()
+          .plot(StructuresGroup.pathToArray(path) as PointArrayAlias)
+          .attr({ fill: 'none' })
+          .stroke({ color: 'orange', width: 2, opacity: 1 })
+      })
 
-    this.app.isolatedShapes.forEach((shape) => {
-      this.svg
-        .polygon()
-        .plot(this.app.shapeToArray(shape) as PointArrayAlias)
-        .attr({ fill: 'none' })
-        .stroke({ color: 'red', width: 2, opacity: 1 })
-    })
+      group.isolatedShapes.forEach((shape) => {
+        this.svg
+          .polygon()
+          .plot(StructuresGroup.shapeToArray(shape) as PointArrayAlias)
+          .attr({ fill: 'none' })
+          .stroke({ color: 'red', width: 2, opacity: 1 })
+      })
+    }
   }
 
   public draw() {
-    this.app.update()
+    for (const group of this.groups) {
+      group.update()
+    }
 
     this.svg.clear()
 
@@ -679,19 +702,26 @@ class Drawer {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const app = new StructuresGroupApp()
-  const rects: Rect[] = RECTANGLES.map((value: number[]) => {
-    const [x, y, width, height] = value
-    return {
-      x,
-      y,
-      width,
-      height,
-    }
+  const groups: StructuresGroup[] = []
+
+  RECTANGLES.forEach((rectangles: number[][]) => {
+    const rects: Rect[] = rectangles.map((value: number[]) => {
+      const [x, y, width, height] = value
+      return {
+        x,
+        y,
+        width,
+        height,
+        id: uuidv4(),
+      }
+    })
+
+    const group = new StructuresGroup()
+    group.setRects(rects)
+    groups.push(group)
   })
 
-  app.setRects(rects)
-
-  const drawer = new Drawer(app)
+  const drawer = new Drawer()
+  drawer.setGroups(groups)
   drawer.draw()
 })
