@@ -14,7 +14,7 @@ type MousePosition = {
   y: number
 }
 
-const DEBUG_DRAW_ENABLED = false
+const DEBUG_DRAW_ENABLED = true
 const DISTANCE_THRESHOLD = 300
 const OFFSET = 30
 const OFFSET_OPTION = {
