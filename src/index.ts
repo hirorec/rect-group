@@ -540,6 +540,8 @@ class Drawer {
   private readonly canvas: HTMLCanvasElement
   private readonly ctx: CanvasRenderingContext2D
   private readonly svg: Svg
+  private width: number = 1000
+  private height: number = 1000
 
   // インタラクション系
   private isMouseDown = false
@@ -549,11 +551,14 @@ class Drawer {
   constructor() {
     this.canvas = document.getElementById('myCanvas') as HTMLCanvasElement
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-    this.svg = SVG().addTo('body').size(1000, 1000)
+    this.svg = SVG().addTo('body').size(this.width, this.height)
 
     window.addEventListener('mousedown', this.onMouseDown.bind(this))
     window.addEventListener('mouseup', this.onMouseUp.bind(this))
     window.addEventListener('mousemove', this.onMouseMove.bind(this))
+    window.addEventListener('resize', this.onResize.bind(this))
+
+    this.onResize()
   }
 
   public setGroups(groups: StructuresGroup[]) {
@@ -579,6 +584,21 @@ class Drawer {
     })
 
     return id
+  }
+
+  //--------------------
+  // event handler
+  //--------------------
+
+  private onResize() {
+    const width = window.innerWidth
+    const height = window.innerHeight
+
+    this.svg.size(width, height)
+    this.canvas.width = width
+    this.canvas.height = height
+
+    this.draw()
   }
 
   private onMouseDown(event: MouseEvent) {
@@ -734,7 +754,7 @@ class Drawer {
     this.svg.clear()
 
     if (this.ctx) {
-      this.ctx.clearRect(0, 0, 1000, 1000)
+      this.ctx.clearRect(0, 0, this.width, this.height)
     }
 
     this.drawBaseRectangles()
