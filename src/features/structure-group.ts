@@ -677,13 +677,33 @@ class Drawer {
   }
 
   private drawShapes() {
-    for (const group of this.groups) {
-      group.groupedShape?.paths.forEach((path) => {
+    this.groups.forEach((group, i) => {
+      group.groupedShape?.paths.forEach((path, j) => {
+        const labelId = `structure-groupedShape-label-${i}-${j}`
+
         this.svg
           .polygon()
           .plot(StructureGroup.pathToArray(path) as PointArrayAlias)
-          .attr({ fill: 'none' })
-          .stroke({ color: 'orange', width: 3, opacity: 1, dasharray: '3 3' })
+          .fill('rgba(0, 0, 0, 0)')
+          .stroke({ color: '#B4B4B4', width: 3, opacity: 1, dasharray: '3 3' })
+          .mouseover((e: MouseEvent) => {
+            const el = e.currentTarget as SVGElement
+            el.setAttribute('stroke', '#1D89ED')
+            const label = this.svg.find(`#${labelId}`)[0]
+
+            if (label) {
+              label.show()
+            }
+          })
+          .mouseleave((e: MouseEvent) => {
+            const el = e.currentTarget as SVGElement
+            el.setAttribute('stroke', '#B4B4B4')
+            const label = this.svg.find(`#${labelId}`)[0]
+
+            if (label) {
+              label.hide()
+            }
+          })
 
         const p = path.reduce((a: Point | null, b: Point) => {
           if (a) {
@@ -703,24 +723,44 @@ class Drawer {
         }, null)
 
         if (p) {
-          this.svg.text('label').move(p.X, p.Y)
+          this.svg.text('label').move(p.X, p.Y).id(labelId).hide()
         }
       })
 
-      group.isolatedShapes.forEach((shape) => {
+      group.isolatedShapes.forEach((shape, i) => {
+        const labelId = `structure-isolatedShapes-label-${i}`
+
         this.svg
           .polygon()
           .plot(StructureGroup.shapeToArray(shape) as PointArrayAlias)
-          .attr({ fill: 'none' })
-          .stroke({ color: 'red', width: 3, opacity: 1, dasharray: '3 3' })
+          .fill('rgba(0, 0, 0, 0)')
+          .stroke({ color: '#B4B4B4', width: 3, opacity: 1, dasharray: '3 3' })
+          .mouseover((e: MouseEvent) => {
+            const el = e.currentTarget as SVGElement
+            el.setAttribute('stroke', '#1D89ED')
+            const label = this.svg.find(`#${labelId}`)[0]
+
+            if (label) {
+              label.show()
+            }
+          })
+          .mouseleave((e: MouseEvent) => {
+            const el = e.currentTarget as SVGElement
+            el.setAttribute('stroke', '#B4B4B4')
+            const label = this.svg.find(`#${labelId}`)[0]
+
+            if (label) {
+              label.hide()
+            }
+          })
 
         const xList = shape.paths[0].map((p: Point) => p.X)
         const yList = shape.paths[0].map((p: Point) => p.Y)
         const x = Math.min(...xList)
         const y = Math.min(...yList)
-        this.svg.text('label').move(x, y)
+        this.svg.text('label').move(x, y).id(labelId).hide()
       })
-    }
+    })
   }
 
   public draw() {
