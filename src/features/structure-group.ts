@@ -677,6 +677,9 @@ class Drawer {
   }
 
   private drawShapes() {
+    const STROKE = '#B4B4B4'
+    const STROKE_HOVER = '#1D89ED'
+
     this.groups.forEach((group, i) => {
       group.groupedShape?.paths.forEach((path, j) => {
         const labelId = `structure-groupedShape-label-${i}-${j}`
@@ -685,10 +688,10 @@ class Drawer {
           .polygon()
           .plot(StructureGroup.pathToArray(path) as PointArrayAlias)
           .fill('rgba(0, 0, 0, 0)')
-          .stroke({ color: '#B4B4B4', width: 3, opacity: 1, dasharray: '3 3' })
+          .stroke({ color: STROKE, width: 3, opacity: 1, dasharray: '3 3' })
           .mouseover((e: MouseEvent) => {
             const el = e.currentTarget as SVGElement
-            el.setAttribute('stroke', '#1D89ED')
+            el.setAttribute('stroke', STROKE_HOVER)
             const label = this.svg.find(`#${labelId}`)[0]
 
             if (label) {
@@ -697,7 +700,7 @@ class Drawer {
           })
           .mouseleave((e: MouseEvent) => {
             const el = e.currentTarget as SVGElement
-            el.setAttribute('stroke', '#B4B4B4')
+            el.setAttribute('stroke', STROKE)
             const label = this.svg.find(`#${labelId}`)[0]
 
             if (label) {
@@ -727,17 +730,17 @@ class Drawer {
         }
       })
 
-      group.isolatedShapes.forEach((shape, i) => {
-        const labelId = `structure-isolatedShapes-label-${i}`
+      group.isolatedShapes.forEach((shape, k) => {
+        const labelId = `structure-isolatedShapes-label-${k}`
 
         this.svg
           .polygon()
           .plot(StructureGroup.shapeToArray(shape) as PointArrayAlias)
           .fill('rgba(0, 0, 0, 0)')
-          .stroke({ color: '#B4B4B4', width: 3, opacity: 1, dasharray: '3 3' })
+          .stroke({ color: STROKE, width: 3, opacity: 1, dasharray: '3 3' })
           .mouseover((e: MouseEvent) => {
             const el = e.currentTarget as SVGElement
-            el.setAttribute('stroke', '#1D89ED')
+            el.setAttribute('stroke', STROKE_HOVER)
             const label = this.svg.find(`#${labelId}`)[0]
 
             if (label) {
@@ -746,7 +749,7 @@ class Drawer {
           })
           .mouseleave((e: MouseEvent) => {
             const el = e.currentTarget as SVGElement
-            el.setAttribute('stroke', '#B4B4B4')
+            el.setAttribute('stroke', STROKE)
             const label = this.svg.find(`#${labelId}`)[0]
 
             if (label) {
