@@ -683,7 +683,7 @@ class Drawer {
           .polygon()
           .plot(StructureGroup.pathToArray(path) as PointArrayAlias)
           .attr({ fill: 'none' })
-          .stroke({ color: 'orange', width: 2, opacity: 1 })
+          .stroke({ color: 'orange', width: 3, opacity: 1, dasharray: '3 3' })
 
         const p = path.reduce((a: Point | null, b: Point) => {
           if (a) {
@@ -712,7 +712,7 @@ class Drawer {
           .polygon()
           .plot(StructureGroup.shapeToArray(shape) as PointArrayAlias)
           .attr({ fill: 'none' })
-          .stroke({ color: 'red', width: 2, opacity: 1 })
+          .stroke({ color: 'red', width: 3, opacity: 1, dasharray: '3 3' })
 
         const xList = shape.paths[0].map((p: Point) => p.X)
         const yList = shape.paths[0].map((p: Point) => p.Y)
